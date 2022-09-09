@@ -6,6 +6,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
+#include <set>
 
 #define UNASSIGNED 0
 
@@ -19,6 +21,9 @@ private:
   int gridPos[81];
   int difficultyLevel;
   bool grid_status;
+  int inputGrid[9][9];
+  int inpurPos[81];
+  set< pair<int,int> > emptyPos;
 
 public:
   Sudoku ();
@@ -34,6 +39,9 @@ public:
   void printSVG(string);
   void calculateDifficulty();
   int  branchDifficultyScore();
+  int validateInput(char ch, int &rowOrCol, bool &escPressed);
+  void startGame();
+  void setAndPrintUserGrid(int invalidInputRow, int invalidInputCol, int num);
 };
 
 // START: Get grid as string in row major order
@@ -118,6 +126,33 @@ bool isSafe(int grid[9][9], int row, int col, int num)
 }
 // END: Helper functions for solving grid
 
+bool isSafe2(int grid[9][9], int row, int col, int num)
+{
+  // cout << "UsedInRow = " << UsedInRow(grid, row, num) << ",UsedInCol = " << UsedInCol(grid, col, num) << ",UsedInBox = " <<UsedInBox(grid, row - row%3 , col - col%3, num)<<endl;
+  int boxStartRow = row - row%3;
+  int boxStartCol = col - col%3;
+  for (int col1 = 0; col1 < 9; col1++)
+  {
+      if (grid[row][col1] == num && col1 != col)
+          return false;
+  }
+  for (int row1 = 0; row1 < 9; row1++)
+  {
+      if (grid[row1][col] == num && row1 != row)
+          return false;
+  }
+  for (int row2 = 0; row2 < 3; row2++)
+  {
+      for (int col2 = 0; col2 < 3; col2++)
+      {
+          if (grid[row2+boxStartRow][col2+boxStartCol] == num && (row2+boxStartRow != row || col2+boxStartCol != col))
+              return false;
+      }
+  }
+  // cout << "\n return true \n" <<endl;
+  return true;
+}
+
 
 // START: Create seed grid
 void Sudoku::fillEmptyDiagonalBox(int idx)
@@ -174,6 +209,7 @@ Sudoku::Sudoku()
   for(int i=0;i<81;i++)
   {
     this->gridPos[i] = i;
+    this->inpurPos[i] = i;
   }
 
   random_shuffle(this->gridPos, (this->gridPos) + 81, genRandNum);
@@ -299,10 +335,11 @@ void Sudoku::printGrid()
   {
     for(int j=0;j<9;j++)
     {
-      if(grid[i][j] == 0)
-	cout<<".";
-      else
-	cout<<grid[i][j];
+      if(grid[i][j] == 0){
+	      cout<<"\033[1;34m . \033[0m";
+      }else{
+	      cout<<"\033[1;32m "<<grid[i][j]<<" \033[0m";
+      }
       cout<<"|";
     }
     cout<<endl;
@@ -377,6 +414,7 @@ void Sudoku::countSoln(int &number)
 // START: Gneerate puzzle
 void Sudoku::genPuzzle()
 {
+  pair<int, int> prA;
   for(int i=0;i<81;i++)
   {
     int x = (this->gridPos[i])/9;
@@ -390,7 +428,11 @@ void Sudoku::genPuzzle()
     if(check!=1)
     {
       this->grid[x][y] = temp;
+    } else {
+      prA = {x, y};
+      emptyPos.insert(prA);
     }
+    this->inputGrid[x][y] = this->grid[x][y];
   }
 }
 // END: Generate puzzle
@@ -455,17 +497,17 @@ int Sudoku::branchDifficultyScore()
         if(tempGrid[(int)(i/9)][(int)(i%9)] == 0)
         {
        	  vector<int> temp;
-	  temp.push_back(i);
+	        temp.push_back(i);
 	
-	  for(int num=1;num<=9;num++)
-	  {
-	    if(isSafe(tempGrid,i/9,i%9,num))
-	    {
-	      temp.push_back(num);
-	    }
-	  }
+          for(int num=1;num<=9;num++)
+          {
+            if(isSafe(tempGrid,i/9,i%9,num))
+            {
+              temp.push_back(num);
+            }
+          }
 
-	  empty.push_back(temp);
+          empty.push_back(temp);
         }
       
      }
@@ -481,8 +523,8 @@ int Sudoku::branchDifficultyScore()
      int check = empty.size();
      for(int i=0;i<check;i++)
      {
-       if(empty[i].size() < empty[minIndex].size())
-	  minIndex = i;
+        if(empty[i].size() < empty[minIndex].size())
+          minIndex = i;
      }
 
      int branchFactor=empty[minIndex].size();
@@ -520,6 +562,97 @@ void Sudoku::calculateDifficulty()
 }
 // END: calculating difficulty level
 
+void Sudoku::setAndPrintUserGrid(int row, int col, int num)
+{
+  int found = false;
+  for(int i=0;i<9;i++)
+  {
+    for(int j=0;j<9;j++)
+    {
+      if(inputGrid[i][j] == 0){
+        cout<<"\033[1;34m . \033[0m";
+      }else{
+        found = false;
+        // display yellow color
+        for (set< pair<int,int> >::iterator iter = emptyPos.begin(); iter != emptyPos.end(); iter++){
+          if(i == iter->first && j == iter->second) {
+            found = true;
+            if(!isSafe2(inputGrid, i, j, inputGrid[i][j])){
+              cout<<"\033[1;31m "<<inputGrid[i][j]<<" \033[0m";
+            } else {
+              cout<<"\033[1;33m "<<inputGrid[i][j]<<" \033[0m";
+            }
+            break;
+          }
+        }
+        // display normal green color
+        if(!found) 
+          cout<<"\033[1;32m "<<inputGrid[i][j]<<" \033[0m";
+      }
+      cout<<"|";
+    }
+    cout<<endl;
+  }
+}
+
+int Sudoku::validateInput(char ch, int &rowOrCol, bool &escPressed) {
+    if (ch == 27) {
+      cout << "Ended!" << endl;
+      escPressed = true;
+      return 0;
+    } else if (ch < 49 || ch > 57) {
+      cout << " Not integer 1-9" <<endl;
+      return -1;
+    } else {
+      rowOrCol = ch - '0';
+    }
+    return rowOrCol;
+}
+
+void Sudoku::startGame() {
+  int row, col, value;
+  bool escPressed = false, emptyPosition = false;
+  char ch;
+  while (true) {
+    while (true) {
+      cout <<"Input row number: ";
+      cin >> ch;
+      row = validateInput(ch, row, escPressed) - 1;
+      if (row != -2) break;
+    }
+    if (escPressed) break;
+    // cout << "row = " << row << endl;
+    
+    while (true) {
+      cout <<"Input column number: ";
+      cin >> ch;
+      col = validateInput(ch, col, escPressed) - 1;
+      if (col != -2) break;
+    }
+    if (escPressed) break;
+    // cout << "col = " << col << endl;
+    for (set< pair<int,int> >::iterator iter = emptyPos.begin(); iter != emptyPos.end(); iter++){
+      if(row == iter->first && col == iter->second) {
+        emptyPosition = true;
+      }
+    }
+    if (!emptyPosition) {
+      cout << "\033[1;31mInvalid Position!\033[0m" << endl;
+      continue;
+    }
+    while (true) {
+      cout <<"Input value of position ("<<row + 1<<","<<col + 1<<"): ";
+      cin >> ch;
+      value = validateInput(ch, value, escPressed);
+      if (value != -1) break;
+    }
+    if (escPressed) break;
+    inputGrid[row][col] = value;
+    setAndPrintUserGrid(row, col, value);
+    // cout << "value = " << value << endl;
+  }
+}
+
 
 // START: The main function
 int main(int argc, char const *argv[])
@@ -542,12 +675,14 @@ int main(int argc, char const *argv[])
   // testing by printing the grid
   puzzle->printGrid();
 
+  puzzle->startGame();
+
   // Printing the grid into SVG file
-  string rem = "sudokuGen";
-  string path = argv[0];
-  path = path.substr(0,path.size() - rem.size());
-  puzzle->printSVG(path);
-  cout<<"The above sudoku puzzle has been stored in puzzles.svg in current folder\n";
+  // string rem = "sudokuGen";
+  // string path = argv[0];
+  // path = path.substr(0,path.size() - rem.size());
+  // puzzle->printSVG(path);
+  // cout<<"The above sudoku puzzle has been stored in puzzles.svg in current folder\n";
   // freeing the memory
   delete puzzle;
 
