@@ -678,7 +678,7 @@ int Sudoku::checkAnswer() {
       }
     }
   }
-  cout << "\033[1;32mCongratulations!\033[0m" << endl;
+  cout << "\033[1;32mCONGRATULATIONS! YOU WIN!\033[0m" << endl;
   return 0;
 }
 
@@ -751,31 +751,47 @@ int main(int argc, char const *argv[])
   // Initialising seed for random number generation
   srand(time(NULL));
 
-  // Creating an instance of Sudoku
-  Sudoku *puzzle = new Sudoku();
+  while(true) {
 
-  // Creating a seed for puzzle generation
-  puzzle->createSeed();
+    system("clear");
+    int select;
+    cout << "\t\tSudoku Game"<<endl;
+    cout << "\nPlease select difficulty (1=easy, 2=medium, 3=hard, 0=exit): ";
+    cin >> select;
+    cout<<endl;
+    if(select == 0) break;
 
-  // Generating the puzzle
-  puzzle->genPuzzle();
+    // Creating an instance of Sudoku
+    Sudoku *puzzle = new Sudoku();
 
-  // Calculating difficulty of puzzle
-  puzzle->calculateDifficulty();
+    // Creating a seed for puzzle generation
+    puzzle->createSeed();
 
-  // testing by printing the grid
-  puzzle->printGrid();
+    // Generating the puzzle
+    puzzle->genPuzzle();
 
-  puzzle->startGame();
+    // Calculating difficulty of puzzle
+    puzzle->calculateDifficulty();
 
-  // Printing the grid into SVG file
-  // string rem = "sudokuGen";
-  // string path = argv[0];
-  // path = path.substr(0,path.size() - rem.size());
-  // puzzle->printSVG(path);
-  // cout<<"The above sudoku puzzle has been stored in puzzles.svg in current folder\n";
-  // freeing the memory
-  delete puzzle;
+    // testing by printing the grid
+    puzzle->printGrid();
+
+    puzzle->startGame();
+
+    // Printing the grid into SVG file
+    // string rem = "sudokuGen";
+    // string path = argv[0];
+    // path = path.substr(0,path.size() - rem.size());
+    // puzzle->printSVG(path);
+    // cout<<"The above sudoku puzzle has been stored in puzzles.svg in current folder\n";
+    // freeing the memory
+    delete puzzle;
+
+    string ctn;
+    cout << "\nDo you want to start a new game ? (y=yes,n=No): ";
+    cin >> ctn;
+    if (ctn != "y" && ctn != "yes" && ctn != "Yes") break;
+  }
 
   return 0;
 }
