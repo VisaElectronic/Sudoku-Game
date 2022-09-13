@@ -19,7 +19,6 @@ private:
   int solnGrid[9][9];
   int guessNum[9];
   int gridPos[81];
-  int difficultyLevel;
   bool grid_status;
   int inputGrid[9][9];
   int saveGrid[9][9];
@@ -29,13 +28,14 @@ private:
 public:
   Sudoku ();
   Sudoku (string, bool row_major=true);
+  int difficultyLevel;
   void fillEmptyDiagonalBox(int);
   void createSeed();
   void printGrid(int grid[9][9] = NULL);
   bool solveGrid();
   string getGrid();
   void countSoln(int &number);
-  void genPuzzle();
+  void genPuzzle(int select);
   bool verifyGridStatus();
   void printSVG(string);
   void calculateDifficulty();
@@ -430,10 +430,24 @@ void Sudoku::countSoln(int &number)
 
 
 // START: Gneerate puzzle
-void Sudoku::genPuzzle()
+void Sudoku::genPuzzle(int select)
 {
   pair<int, int> prA;
-  for(int i=0;i<4;i++)
+  int difficulty;
+  switch(select) {
+    case 2:
+      difficulty = 30;
+      break;
+    case 3:
+      difficulty = 60;
+      break;
+    case 4:
+      difficulty = 81;
+      break;
+    default:
+      difficulty = 10;
+  }
+  for(int i=0;i<difficulty;i++)
   {
     int x = (this->gridPos[i])/9;
     int y = (this->gridPos[i])%9;
@@ -638,7 +652,7 @@ void Sudoku::setAndPrintUserGrid(int row, int col, int num)
 
 int Sudoku::validateInput(char ch, int &rowOrCol, bool &escPressed) {
     if (ch == 27) {
-      cout << "Ended!" << endl;
+      cout << "Exited" << endl;
       escPressed = true;
       return 0;
     } else if ((ch < 49 || ch > 57) && ch != 114) {
@@ -673,7 +687,7 @@ int Sudoku::checkAnswer() {
   for(int i =0; i< 9; i++){
     for(int j=0; j < 9; j++) {
       if (this->inputGrid[i][j] != this->solnGrid[i][j]) {
-        cout << "\033[1;31mFailed! Please try again!\033[0m" << endl;
+        cout << "\033[1;31mFailed! Please try again!\033[0m\n" << endl;
         return 2;
       }
     }
@@ -688,6 +702,7 @@ void Sudoku::startGame() {
   char ch;
   while (true) {
     while (true) {
+      cout<<"\033[1;33m(Press esc+enter to exit, r+enter to reset)\033[0m"<<endl;
       cout <<"Input row number: ";
       cin >> ch;
       row = validateInput(ch, row, escPressed) - 1;
@@ -751,15 +766,17 @@ int main(int argc, char const *argv[])
   // Initialising seed for random number generation
   srand(time(NULL));
 
+  bool regenerate = false;
+  int select;
   while(true) {
 
     system("clear");
-    int select;
-    cout << "\t\tSudoku Game"<<endl;
-    cout << "\nPlease select difficulty (1=easy, 2=medium, 3=hard, 0=exit): ";
+    cout<<"\033[1;33m\t\tSUDOKU GAME\033[0m"<<endl;
+    cout << "\nPlease select difficulty (1=easy, 2=medium, 3=hard, 4=super-hard, 0=exit): ";
     cin >> select;
     cout<<endl;
     if(select == 0) break;
+    if(select != 0 && select != 1 && select != 2 && select != 3 && select != 4) continue;
 
     // Creating an instance of Sudoku
     Sudoku *puzzle = new Sudoku();
@@ -768,7 +785,7 @@ int main(int argc, char const *argv[])
     puzzle->createSeed();
 
     // Generating the puzzle
-    puzzle->genPuzzle();
+    puzzle->genPuzzle(select);
 
     // Calculating difficulty of puzzle
     puzzle->calculateDifficulty();
@@ -788,7 +805,7 @@ int main(int argc, char const *argv[])
     delete puzzle;
 
     string ctn;
-    cout << "\nDo you want to start a new game ? (y=yes,n=No): ";
+    cout<<"\033[1;33m\nDo you want to start a new game ? (y=yes,n=No): \033[0m";
     cin >> ctn;
     if (ctn != "y" && ctn != "yes" && ctn != "Yes") break;
   }
